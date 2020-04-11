@@ -42,3 +42,4 @@
 .idea/vcs.xml
 .idea/*
 game.db.json
+twitter.env
