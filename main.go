@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/ChimeraCoder/anaconda"
 	"net/url"
 	"os"
@@ -15,21 +16,35 @@ type Tokens struct {
 	TokenSecretKey string
 }
 
+func getenv(name string) string {
+	v := os.Getenv(name)
+	if v == "" {
+		panic("missing required environment variable " + name)
+	}
+	return v
+}
+
 func main() {
 	tokens := Tokens{
-		ConsumerKey:       os.Getenv("TWITTERBOT_CONSUMER_KEY"),
-		ConsumerSecretKey: os.Getenv("TWITTERBOT_CONSUMER_SECRETKEY"),
-		TokenKey:       os.Getenv("TWITTERBOT_TOKEN_KEY"),
-		TokenSecretKey:    os.Getenv("TWITTERBOT_TOKEN_SECRETKEY"),
+		ConsumerKey:       getenv("TWITTERBOT_CONSUMER_KEY"),
+		ConsumerSecretKey: getenv("TWITTERBOT_CONSUMER_SECRETKEY"),
+		TokenKey:          getenv("TWITTERBOT_TOKEN_KEY"),
+		TokenSecretKey:    getenv("TWITTERBOT_TOKEN_SECRETKEY"),
 	}
+
 	anaconda.SetConsumerKey(tokens.ConsumerKey)
 	anaconda.SetConsumerSecret(tokens.ConsumerSecretKey)
 	api := anaconda.NewTwitterApi(tokens.TokenKey, tokens.TokenSecretKey)
+	//api.SetLogger(log)
 
 	stream := api.PublicStreamFilter(url.Values{
-		"": []string{"#ntguiltydevbot-test", "@ntguiltydevbot"},
+		"track": []string{"#coronavirus"},
 	})
 
 	defer stream.Stop()
 
+	api.Tweet
+	for v := range stream.C {
+		fmt.Printf("%T\n", v)
+	}
 }
