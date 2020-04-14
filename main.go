@@ -5,6 +5,7 @@ import (
 	"github.com/ChimeraCoder/anaconda"
 	"net/url"
 	"os"
+	"github.com/sirupsen/logrus"
 )
 
 //Tokens struct stores our access tokens and secret keys needed for
@@ -43,7 +44,25 @@ func main() {
 
 	defer stream.Stop()
 
-	api.Tweet
+	for v := range stream.C {
+		t, ok := v.(anaconda.Tweet)
+		if !ok {
+			logrus.Warningf("received unexpected value of type %T", v)
+			continue
+		}
+
+		if t.RetweetedStatus != nil {
+			continue
+		}
+
+		_, err := api.Retweet(t.Id, false)
+		if err != nil {
+			logrus.Errorf("could not retweet %d: %v", t.Id, err)
+			continue
+		}
+		logrus.Infof("retweeted %d", t.Id)
+	}
+
 	for v := range stream.C {
 		fmt.Printf("%T\n", v)
 	}
