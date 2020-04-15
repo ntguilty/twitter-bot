@@ -3,18 +3,19 @@ package main
 import (
 	"fmt"
 	"github.com/ChimeraCoder/anaconda"
+	"github.com/sirupsen/logrus"
 	"net/url"
 	"os"
-	"github.com/sirupsen/logrus"
 )
 
 //Tokens struct stores our access tokens and secret keys needed for
 //authentication against Twitter REST API
-type Tokens struct {
+type Credentials struct {
 	ConsumerKey string
 	ConsumerSecretKey string
 	TokenKey string
 	TokenSecretKey string
+	NameAcc string
 }
 
 func getenv(name string) string {
@@ -25,12 +26,28 @@ func getenv(name string) string {
 	return v
 }
 
+func findUsermentions(tweet anaconda.Tweet, name string) bool {
+	e := false
+	users_mentions := tweet.Entities.User_mentions
+	for _, v := range users_mentions {
+		if v.Screen_name == name {
+			e = true
+		}
+	}
+	return e
+}
+
+//func generateQuestion(username string) string {
+//
+//}
+
 func main() {
-	tokens := Tokens{
+	tokens := Credentials{
 		ConsumerKey:       getenv("TWITTERBOT_CONSUMER_KEY"),
 		ConsumerSecretKey: getenv("TWITTERBOT_CONSUMER_SECRETKEY"),
 		TokenKey:          getenv("TWITTERBOT_TOKEN_KEY"),
 		TokenSecretKey:    getenv("TWITTERBOT_TOKEN_SECRETKEY"),
+		NameAcc:		   getenv("TWITTERBOT_NAMEACC"),
 	}
 
 	anaconda.SetConsumerKey(tokens.ConsumerKey)
@@ -39,7 +56,7 @@ func main() {
 	//api.SetLogger(log)
 
 	stream := api.PublicStreamFilter(url.Values{
-		"track": []string{"#coronavirus"},
+		"track": []string{tokens.NameAcc},
 	})
 
 	defer stream.Stop()
@@ -50,20 +67,26 @@ func main() {
 			logrus.Warningf("received unexpected value of type %T", v)
 			continue
 		}
+		isUserMentioned := findUsermentions(t, tokens.NameAcc)
 
-		if t.RetweetedStatus != nil {
+		if isUserMentioned == false {
 			continue
 		}
 
-		_, err := api.Retweet(t.Id, false)
+		if t.InReplyToStatusID != 0 {
+			continue
+		}
+
+		b, err := api.PostTweet("@"+t.User.ScreenName+" hi this is your question", url.Values{
+			//TODO:why here IdStr is working (its a string) and string(t.Id which is int64) is not? check it
+			"in_reply_to_status_id" : []string{t.IdStr},
+		})
+		fmt.Printf("%+v\n", b.InReplyToStatusID)
 		if err != nil {
-			logrus.Errorf("could not retweet %d: %v", t.Id, err)
+			logrus.Errorf("could not replied %d: %v", t.Id, err)
 			continue
 		}
-		logrus.Infof("retweeted %d", t.Id)
+		logrus.Infof("replied succesfully %d", t.Id)
 	}
 
-	for v := range stream.C {
-		fmt.Printf("%T\n", v)
-	}
 }
