@@ -37,9 +37,10 @@ func findUsermentions(tweet anaconda.Tweet, name string) bool {
 	return e
 }
 
-//func generateQuestion(username string) string {
-//
-//}
+func generateStringQuestion(username string) string {
+	s := "@" + username + "here will be simple question someday"
+	return s
+}
 
 func main() {
 	tokens := Credentials{
@@ -77,10 +78,11 @@ func main() {
 			continue
 		}
 
-		b, err := api.PostTweet("@"+t.User.ScreenName+" hi this is your question", url.Values{
+		b, err := api.PostTweet(generateStringQuestion(t.User.ScreenName), url.Values{
 			//TODO:why here IdStr is working (its a string) and string(t.Id which is int64) is not? check it
 			"in_reply_to_status_id" : []string{t.IdStr},
 		})
+		//print structs
 		fmt.Printf("%+v\n", b.InReplyToStatusID)
 		if err != nil {
 			logrus.Errorf("could not replied %d: %v", t.Id, err)
